@@ -1,0 +1,72 @@
+1. Introdução
+
+O objetivo deste teste é desenvolver uma pequena aplicação para a gestão de produtos de uma
+loja. Pretendemos avaliar a sua capacidade de organizar código, separar responsabilidades e
+implementar regras de negócio de forma limpa e manutenível.
+
+2. Requisitos Técnicos
+Back-end (Obrigatório)
+
+● Linguagem: C# com ASP.NET Core Web API (versão 6 ou superior do .NET).
+● Base de Dados: Base de dados relacional (SQL Server, PostgreSQL, SQLite).
+● Funcionalidades:
+   ○ Endpoint para listagem de produtos.
+   ○ Endpoint para obter detalhes de um produto específico.
+   ○ Endpoints para criação, atualização e eliminação (CRUD).
+● Requisitos Adicionais:
+● Paginação obrigatória na listagem de produtos (ex: page, pageSize).
+● Implementação de logs da aplicação, registrando eventos relevantes como:
+   ○ Criação, atualização e exclusão de produtos.
+   ○ Erros de validação e exceções.
+
+Front-end
+● Tecnologia: À sua escolha (React, Angular, Vue ou Blazor).
+● Funcionalidades:
+   ○ Listagem de produtos.
+   ○ Formulário para adicionar e editar produtos.
+   ○ Botão para remover produtos.
+   ○ Exibição de mensagens de erro caso as regras de negócio não sejam cumpridas.
+
+3. Regras de Negócio
+
+A aplicação deve obrigatoriamente validar as seguintes regras no Back-end:
+● Validação de Estoque: Não deve ser permitida a gravação de produtos com quantidade
+em estoque inferior a zero.
+● Preço por Categoria: Se a categoria do produto for "Eletrônicos", o preço unitário não
+pode ser inferior a R$ 50,00.
+● Unicidade de SKU: Cada produto deve ter um código identificador (SKU) único. O sistema
+não deve permitir o registo de dois produtos com o mesmo SKU.
+
+4. O que vamos avaliar
+
+● Arquitetura e Organização: Como as regras de negócio foram isoladas e se a estrutura
+facilitaria uma futura manutenção.
+● Utilização de DTOs: Separação entre as entidades da base de dados e os objetos de
+transferência da API.
+● Tratamento de Erros: Respostas adequadas.
+● Boas Práticas: Nomenclatura, legibilidade e aplicação de princípios de orientação a
+objetos.
+● Originalidade e Criatividade: Capacidade de propor soluções afim de agregar valor ao
+projeto
+
+5. Instruções de Entrega
+
+● Disponibilize o código num repositório público (GitHub / GitLab).
+● Inclua um arquivo README.md com as instruções necessárias para executar o projeto
+(Back-end e Front-end).
+● Sinta-se à vontade para implementar o que considerar relevante para demonstrar seu nível
+técnico.
+
+6. Uso de inteligência Artificial
+
+Nós acreditamos que a IA (ChatGPT, GitHub Copilot, etc.) é uma ferramenta poderosa para o
+desenvolvedor moderno. Por isso, o seu uso é permitido neste desafio.
+
+No entanto, lembre-se:
+● Entendimento é fundamental: Você deve ser capaz de explicar cada decisão arquitetural
+e linha de código presente na sua entrega durante uma eventual entrevista técnica.
+● Autoria e Organização: A IA pode gerar trechos de código, mas a estrutura do projeto, a
+coesão entre as camadas e a aplicação correta das regras de negócio são
+responsabilidade sua.
+● Critério: Use a tecnologia para ganhar agilidade, mas não deixe que ela comprometa a
+qualidade ou a personalização da sua solução.
