@@ -76,14 +76,34 @@ public sealed class Product
             throw new DomainException("A categoria deve ser informada.");
         }
 
-        var normalized = value.Trim().ToUpperInvariant();
+        var normalized = value.Trim();
 
         if (normalized.Length > 50)
         {
             throw new DomainException("A categoria deve ter no maximo 50 caracteres.");
         }
 
-        return normalized;
+        if (string.Equals(normalized, ProductCategories.Electronics, StringComparison.OrdinalIgnoreCase))
+        {
+            return ProductCategories.Electronics;
+        }
+
+        if (string.Equals(normalized, ProductCategories.Apparel, StringComparison.OrdinalIgnoreCase))
+        {
+            return ProductCategories.Apparel;
+        }
+
+        if (string.Equals(normalized, ProductCategories.OfficeSupplies, StringComparison.OrdinalIgnoreCase))
+        {
+            return ProductCategories.OfficeSupplies;
+        }
+
+        if (string.Equals(normalized, ProductCategories.Home, StringComparison.OrdinalIgnoreCase))
+        {
+            return ProductCategories.Home;
+        }
+
+        throw new DomainException("Categoria invalida. Use: Electronics, Apparel, Office Supplies ou Home.");
     }
 
     private void ValidateBusinessRules()
@@ -98,9 +118,9 @@ public sealed class Product
             throw new DomainException("O preco nao pode ser negativo.");
         }
 
-        if (Category == ProductCategories.Electronic && Price < 50m)
+        if (Category == ProductCategories.Electronics && Price < 50m)
         {
-            throw new DomainException("Produtos da categoria ELETRONICO devem ter preco minimo de 50.00.");
+            throw new DomainException("Produtos da categoria Electronics devem ter preco minimo de 50.00.");
         }
     }
 }
