@@ -14,6 +14,8 @@ public interface IProductRepository
 
     Task<ProductDashboardSnapshot> GetDashboardSnapshotAsync(CancellationToken cancellationToken = default);
 
+    Task<bool> HasDemoSeedDataAsync(CancellationToken cancellationToken = default);
+
     Task<bool> ExistsBySkuAsync(Sku sku, Guid? ignoreProductId = null, CancellationToken cancellationToken = default);
 
     Task AddAsync(Product product, CancellationToken cancellationToken = default);

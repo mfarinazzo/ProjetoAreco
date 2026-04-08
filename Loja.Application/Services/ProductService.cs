@@ -92,6 +92,13 @@ public sealed class ProductService : IProductService
             throw new DomainException($"A carga ficticia permite no maximo {MaxSeedProducts} produtos por execucao.");
         }
 
+        var hasDemoSeedData = await _productRepository.HasDemoSeedDataAsync(cancellationToken);
+
+        if (hasDemoSeedData)
+        {
+            throw new DomainException("A carga ficticia de produtos ja foi executada neste banco.");
+        }
+
         var categories = new[]
         {
             ProductCategories.Electronics,

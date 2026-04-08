@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { X } from "lucide-react";
 import { z } from "zod";
 import { PRODUCT_CATEGORIES } from "@/constants/categories";
@@ -8,6 +8,41 @@ import type { ProductCategory } from "@/constants/categories";
 import { Button } from "@/components/ui/button";
 
 const skuPattern = /^[A-Za-z0-9-]+$/;
+const priceFormatter = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+const quantityFormatter = new Intl.NumberFormat("pt-BR", {
+  maximumFractionDigits: 0,
+});
+
+function formatPriceInput(value: number): string {
+  return priceFormatter.format(value);
+}
+
+function formatStockQuantityInput(value: number): string {
+  return quantityFormatter.format(value);
+}
+
+function parseCentsInputToPrice(value: string): number {
+  const digits = value.replace(/\D/g, "");
+
+  if (!digits) {
+    return 0;
+  }
+
+  return Number(digits) / 100;
+}
+
+function parseDigitsInputToQuantity(value: string): number {
+  const digits = value.replace(/\D/g, "");
+
+  if (!digits) {
+    return 0;
+  }
+
+  return Number.parseInt(digits, 10);
+}
 
 export const productFormSchema = z
   .object({
@@ -70,6 +105,7 @@ export function ProductForm({
 }: ProductFormProps) {
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
@@ -173,14 +209,23 @@ export function ProductForm({
               <label htmlFor="product-price" className="mb-1.5 block text-sm font-medium text-slate-700">
                 Price (USD)
               </label>
-              <input
-                id="product-price"
-                type="number"
-                min="0"
-                step="0.01"
-                {...register("price")}
-                className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
-                placeholder="199.99"
+              <Controller
+                name="price"
+                control={control}
+                render={({ field }) => (
+                  <input
+                    id="product-price"
+                    type="text"
+                    inputMode="numeric"
+                    value={formatPriceInput(Number(field.value ?? 0))}
+                    onBlur={field.onBlur}
+                    onChange={(event) => {
+                      field.onChange(parseCentsInputToPrice(event.target.value));
+                    }}
+                    className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                    placeholder="0,00"
+                  />
+                )}
               />
               {errors.price && <p className="mt-1 text-xs text-red-600">{errors.price.message}</p>}
             </div>
@@ -189,14 +234,23 @@ export function ProductForm({
               <label htmlFor="product-stock" className="mb-1.5 block text-sm font-medium text-slate-700">
                 Stock Quantity
               </label>
-              <input
-                id="product-stock"
-                type="number"
-                min="0"
-                step="1"
-                {...register("stockQuantity")}
-                className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
-                placeholder="80"
+              <Controller
+                name="stockQuantity"
+                control={control}
+                render={({ field }) => (
+                  <input
+                    id="product-stock"
+                    type="text"
+                    inputMode="numeric"
+                    value={formatStockQuantityInput(Number(field.value ?? 0))}
+                    onBlur={field.onBlur}
+                    onChange={(event) => {
+                      field.onChange(parseDigitsInputToQuantity(event.target.value));
+                    }}
+                    className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                    placeholder="0"
+                  />
+                )}
               />
               {errors.stockQuantity && (
                 <p className="mt-1 text-xs text-red-600">{errors.stockQuantity.message}</p>

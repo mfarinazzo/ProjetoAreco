@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
-const LOW_STOCK_THRESHOLD = 25;
+const LOW_STOCK_THRESHOLD = 10;
 const currencyWithDecimals = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
@@ -57,7 +57,7 @@ function getVisiblePageNumbers(totalPages: number, currentPage: number): number[
 }
 
 function StockStatusBadge({ stockQuantity }: { stockQuantity: number }) {
-  const isLowStock = stockQuantity <= LOW_STOCK_THRESHOLD;
+  const isLowStock = stockQuantity < LOW_STOCK_THRESHOLD;
 
   return (
     <span
@@ -89,7 +89,23 @@ export function ProductTable({
   isSeedingDemoData = false,
 }: ProductTableProps) {
   const [openRowMenuId, setOpenRowMenuId] = useState<string | null>(null);
+  const [rowMenuDirection, setRowMenuDirection] = useState<"up" | "down">("down");
   const rowMenuContainerRef = useRef<HTMLDivElement>(null);
+  const rowMenuHeight = 44;
+
+  function handleToggleRowMenu(productId: string, triggerButton: HTMLButtonElement) {
+    setOpenRowMenuId((currentId) => {
+      if (currentId === productId) {
+        return null;
+      }
+
+      const viewportBottomSpace = window.innerHeight - triggerButton.getBoundingClientRect().bottom;
+      const shouldOpenUpward = viewportBottomSpace < rowMenuHeight + 16;
+      setRowMenuDirection(shouldOpenUpward ? "up" : "down");
+
+      return productId;
+    });
+  }
 
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
@@ -230,16 +246,19 @@ export function ProductTable({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          onClick={() =>
-                            setOpenRowMenuId((currentId) => (currentId === product.id ? null : product.id))
-                          }
+                          onClick={(event) => handleToggleRowMenu(product.id, event.currentTarget)}
                           className="size-8 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                         >
                           <MoreHorizontal className="size-4" />
                         </Button>
 
                         {openRowMenuId === product.id && (
-                          <div className="absolute right-0 top-[calc(100%+4px)] z-30 w-40 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+                          <div
+                            className={cn(
+                              "absolute right-0 z-30 w-40 rounded-lg border border-slate-200 bg-white p-1 shadow-lg",
+                              rowMenuDirection === "up" ? "bottom-[calc(100%+4px)]" : "top-[calc(100%+4px)]",
+                            )}
+                          >
                             <button
                               type="button"
                               onClick={() => {

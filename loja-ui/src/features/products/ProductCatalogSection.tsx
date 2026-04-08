@@ -30,7 +30,7 @@ interface ProductCatalogSectionProps {
   showCharts?: boolean;
 }
 
-const LOW_STOCK_THRESHOLD = 25;
+const LOW_STOCK_THRESHOLD = 10;
 
 const CATEGORY_COLOR_HEX: Record<string, string> = {
   Electronics: "#0f172a",
@@ -59,7 +59,7 @@ function getMetricCards(
   dashboardStats: ProductDashboardStatsResponse | null,
 ): MetricCardData[] {
   const totalProducts = dashboardStats?.totalProducts ?? products.length;
-  const lowStockCount = products.filter((product) => product.stockQuantity <= LOW_STOCK_THRESHOLD).length;
+  const lowStockCount = products.filter((product) => product.stockQuantity < LOW_STOCK_THRESHOLD).length;
   const totalInventoryValue =
     dashboardStats?.totalInventoryValue ??
     products.reduce((accumulator, product) => accumulator + product.price * product.stockQuantity, 0);

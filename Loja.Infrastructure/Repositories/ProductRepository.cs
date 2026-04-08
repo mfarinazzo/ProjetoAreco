@@ -71,6 +71,15 @@ public sealed class ProductRepository : IProductRepository
         return new ProductDashboardSnapshot(totalProducts, totalInventoryValue, categoryStock);
     }
 
+    public Task<bool> HasDemoSeedDataAsync(CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Products
+            .AsNoTracking()
+            .AnyAsync(
+                product => EF.Property<string>(product, nameof(Product.Sku)).StartsWith("DEMO-"),
+                cancellationToken);
+    }
+
     public Task<bool> ExistsBySkuAsync(
         Sku sku,
         Guid? ignoreProductId = null,
