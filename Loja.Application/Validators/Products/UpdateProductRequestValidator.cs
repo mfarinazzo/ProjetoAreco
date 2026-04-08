@@ -29,15 +29,15 @@ public sealed class UpdateProductRequestValidator : AbstractValidator<UpdateProd
 
         RuleFor(x => x)
             .Must(BeValidElectronicPrice)
-            .WithMessage("Produtos da categoria ELETRONICO devem ter preco minimo de 50.00.")
+            .WithMessage("Produtos da categoria Electronics devem ter preco minimo de 50.00.")
             .WithName(nameof(UpdateProductRequest.Price));
     }
 
     private static bool BeValidElectronicPrice(UpdateProductRequest request)
     {
-        var normalizedCategory = request.Category.Trim().ToUpperInvariant();
+        var normalizedCategory = request.Category.Trim();
 
-        if (normalizedCategory != ProductCategories.Electronic)
+        if (!string.Equals(normalizedCategory, ProductCategories.Electronics, StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
