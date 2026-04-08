@@ -18,6 +18,7 @@ export interface ProductDashboardStatsResponse {
   totalProducts: number;
   totalInventoryValue: number;
   categories: ProductCategoryStockResponse[];
+  lowStockProducts: number;
 }
 
 export interface PagedResult<T> {

@@ -84,7 +84,8 @@ function getMetricCards(
   dashboardStats: ProductDashboardStatsResponse | null,
 ): MetricCardData[] {
   const totalProducts = dashboardStats?.totalProducts ?? products.length;
-  const lowStockCount = products.filter((product) => product.stockQuantity < LOW_STOCK_THRESHOLD).length;
+  const lowStockCount = dashboardStats?.lowStockProducts ??
+    products.filter((product) => product.stockQuantity < LOW_STOCK_THRESHOLD).length;
   const totalInventoryValue =
     dashboardStats?.totalInventoryValue ??
     products.reduce((accumulator, product) => accumulator + product.price * product.stockQuantity, 0);

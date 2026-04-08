@@ -127,6 +127,9 @@ public sealed class ProductRepository : IProductRepository
         var products = _dbContext.Products.AsNoTracking();
 
         var totalProducts = await products.CountAsync(cancellationToken);
+        var lowStockProducts = await products.CountAsync(
+            product => product.StockQuantity < LowStockThreshold,
+            cancellationToken);
 
         var totalInventoryValue = totalProducts == 0
             ? 0m
@@ -149,7 +152,7 @@ public sealed class ProductRepository : IProductRepository
             .Select(item => new CategoryStockSnapshot(item.Category, item.StockQuantity))
             .ToArray();
 
-        return new ProductDashboardSnapshot(totalProducts, totalInventoryValue, categoryStock);
+        return new ProductDashboardSnapshot(totalProducts, totalInventoryValue, categoryStock, lowStockProducts);
     }
 
     public Task<bool> HasDemoSeedDataAsync(CancellationToken cancellationToken = default)

@@ -111,7 +111,8 @@ public sealed class ProductService : IProductService
         return new ProductDashboardStatsResponse(
             snapshot.TotalProducts,
             snapshot.TotalInventoryValue,
-            categoryItems);
+            categoryItems,
+            snapshot.LowStockProducts);
     }
 
     public async Task<int> SeedDemoProductsAsync(int count, CancellationToken cancellationToken = default)
