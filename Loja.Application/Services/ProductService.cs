@@ -37,6 +37,11 @@ public sealed class ProductService : IProductService
     public async Task<PagedResult<ProductItemResponse>> GetPagedAsync(
         int pageNumber,
         int pageSize,
+        string? searchTerm = null,
+        IReadOnlyCollection<string>? categories = null,
+        IReadOnlyCollection<string>? statuses = null,
+        string sortBy = "id",
+        string sortDirection = "asc",
         CancellationToken cancellationToken = default)
     {
         var normalizedPageNumber = pageNumber <= 0 ? DefaultPageNumber : pageNumber;
@@ -44,9 +49,38 @@ public sealed class ProductService : IProductService
             ? DefaultPageSize
             : Math.Min(pageSize, MaxPageSize);
 
+        var normalizedSearchTerm = string.IsNullOrWhiteSpace(searchTerm)
+            ? null
+            : searchTerm.Trim();
+
+        var normalizedCategories = categories?
+            .Where(category => !string.IsNullOrWhiteSpace(category))
+            .Select(category => category.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        var normalizedStatuses = statuses?
+            .Where(status => !string.IsNullOrWhiteSpace(status))
+            .Select(status => status.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        var normalizedSortBy = string.IsNullOrWhiteSpace(sortBy)
+            ? "id"
+            : sortBy.Trim();
+
+        var normalizedSortDirection = string.Equals(sortDirection, "desc", StringComparison.OrdinalIgnoreCase)
+            ? "desc"
+            : "asc";
+
         var pagedProducts = await _productRepository.GetPagedAsync(
             normalizedPageNumber,
             normalizedPageSize,
+            normalizedSearchTerm,
+            normalizedCategories,
+            normalizedStatuses,
+            normalizedSortBy,
+            normalizedSortDirection,
             cancellationToken);
 
         var items = pagedProducts.Items

@@ -4,9 +4,16 @@ import { HighchartsReact } from "highcharts-react-official";
 import { Boxes, DollarSign, TriangleAlert, type LucideIcon } from "lucide-react";
 import { ProductForm, INITIAL_PRODUCT_FORM_VALUES, type ProductFormValues } from "@/components/products/ProductForm";
 import { ProductTable } from "@/components/products/ProductTable";
-import type { ProductDashboardStatsResponse, ProductItemResponse } from "@/components/products/types";
+import type {
+  ProductDashboardStatsResponse,
+  ProductItemResponse,
+  ProductSortBy,
+  ProductSortDirection,
+  ProductStatusFilter,
+} from "@/components/products/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PRODUCT_CATEGORIES } from "@/constants/categories";
 import { useProducts } from "@/hooks/useProducts";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +38,24 @@ interface ProductCatalogSectionProps {
 }
 
 const LOW_STOCK_THRESHOLD = 10;
+
+const SEARCH_DEBOUNCE_MS = 300;
+
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedValue(value);
+    }, delayMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [value, delayMs]);
+
+  return debouncedValue;
+}
 
 const CATEGORY_COLOR_HEX: Record<string, string> = {
   Electronics: "#0f172a",
@@ -405,6 +430,11 @@ function DeleteProductModal({
 export function ProductCatalogSection({ showCharts = false }: ProductCatalogSectionProps) {
   const [productSearchTerm, setProductSearchTerm] = useState("");
   const [productCurrentPage, setProductCurrentPage] = useState(1);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<ProductStatusFilter[]>([]);
+  const [sortBy, setSortBy] = useState<ProductSortBy>("id");
+  const [sortDirection, setSortDirection] = useState<ProductSortDirection>("asc");
+  const debouncedSearchTerm = useDebouncedValue(productSearchTerm, SEARCH_DEBOUNCE_MS);
 
   const {
     products,
@@ -418,27 +448,17 @@ export function ProductCatalogSection({ showCharts = false }: ProductCatalogSect
     deleteProduct,
     duplicateProduct,
     seedDemoProducts,
-  } = useProducts(productCurrentPage, 10);
+  } = useProducts(productCurrentPage, 10, {
+    searchTerm: debouncedSearchTerm,
+    categories: selectedCategories,
+    statuses: selectedStatuses,
+    sortBy,
+    sortDirection,
+  });
 
   const [isCreateProductModalOpen, setIsCreateProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductItemResponse | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<ProductItemResponse | null>(null);
-
-  const filteredProducts = useMemo(() => {
-    const normalizedSearch = productSearchTerm.trim().toLowerCase();
-
-    if (!normalizedSearch) {
-      return products;
-    }
-
-    return products.filter((product) => {
-      return (
-        product.sku.toLowerCase().includes(normalizedSearch) ||
-        product.name.toLowerCase().includes(normalizedSearch) ||
-        product.category.toLowerCase().includes(normalizedSearch)
-      );
-    });
-  }, [products, productSearchTerm]);
 
   useEffect(() => {
     if (productCurrentPage > productTotalPages) {
@@ -518,6 +538,64 @@ export function ProductCatalogSection({ showCharts = false }: ProductCatalogSect
     }
   }
 
+  function toggleCategoryFilter(category: string) {
+    setProductCurrentPage(1);
+    setSelectedCategories((currentCategories) => {
+      if (currentCategories.includes(category)) {
+        return currentCategories.filter((item) => item !== category);
+      }
+
+      return [...currentCategories, category];
+    });
+  }
+
+  function toggleStatusFilter(status: ProductStatusFilter) {
+    setProductCurrentPage(1);
+    setSelectedStatuses((currentStatuses) => {
+      if (currentStatuses.includes(status)) {
+        return currentStatuses.filter((item) => item !== status);
+      }
+
+      return [...currentStatuses, status];
+    });
+  }
+
+  function clearFilters() {
+    setProductCurrentPage(1);
+    setSelectedCategories([]);
+    setSelectedStatuses([]);
+  }
+
+  function handleSortChange(column: ProductSortBy) {
+    setProductCurrentPage(1);
+
+    if (column === "id") {
+      setSortBy("id");
+      setSortDirection((currentDirection) => {
+        if (sortBy !== "id") {
+          return "asc";
+        }
+
+        return currentDirection === "asc" ? "desc" : "asc";
+      });
+      return;
+    }
+
+    if (sortBy !== column) {
+      setSortBy(column);
+      setSortDirection("asc");
+      return;
+    }
+
+    if (sortDirection === "asc") {
+      setSortDirection("desc");
+      return;
+    }
+
+    setSortBy("id");
+    setSortDirection("asc");
+  }
+
   return (
     <>
       {isProductsLoading && (
@@ -539,17 +617,26 @@ export function ProductCatalogSection({ showCharts = false }: ProductCatalogSect
       )}
 
       <ProductTable
-        products={filteredProducts}
+        products={products}
         searchTerm={productSearchTerm}
         currentPage={productCurrentPage}
         totalPages={productTotalPages}
         totalRecords={productTotalRecords}
         pageSize={10}
         isLoading={isProductsLoading}
+        sortBy={sortBy}
+        sortDirection={sortDirection}
+        categoryOptions={PRODUCT_CATEGORIES}
+        selectedCategories={selectedCategories}
+        selectedStatuses={selectedStatuses}
         onSearchTermChange={(value) => {
           setProductSearchTerm(value);
           setProductCurrentPage(1);
         }}
+        onSortChange={handleSortChange}
+        onToggleCategoryFilter={toggleCategoryFilter}
+        onToggleStatusFilter={toggleStatusFilter}
+        onClearFilters={clearFilters}
         onPageChange={setProductCurrentPage}
         onOpenAddModal={() => setIsCreateProductModalOpen(true)}
         onSeedDemoData={handleSeedDemoData}

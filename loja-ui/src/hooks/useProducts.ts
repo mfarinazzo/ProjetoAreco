@@ -4,6 +4,9 @@ import type {
   PagedResult,
   ProductDashboardStatsResponse,
   ProductItemResponse,
+  ProductSortBy,
+  ProductSortDirection,
+  ProductStatusFilter,
   ProductUpsertInput,
 } from "@/components/products/types";
 
@@ -32,6 +35,14 @@ interface UseProductsResult {
   deleteProduct: (id: string) => Promise<void>;
   duplicateProduct: (product: ProductItemResponse) => Promise<ProductItemResponse>;
   seedDemoProducts: (count?: number) => Promise<number>;
+}
+
+interface UseProductsOptions {
+  searchTerm?: string;
+  categories?: string[];
+  statuses?: ProductStatusFilter[];
+  sortBy?: ProductSortBy;
+  sortDirection?: ProductSortDirection;
 }
 
 async function extractApiErrorMessage(response: Response, fallbackMessage: string): Promise<string> {
@@ -70,13 +81,25 @@ async function extractApiErrorMessage(response: Response, fallbackMessage: strin
   return fallbackMessage;
 }
 
-export function useProducts(page: number, pageSize = 10): UseProductsResult {
+export function useProducts(
+  page: number,
+  pageSize = 10,
+  options: UseProductsOptions = {},
+): UseProductsResult {
   const [products, setProducts] = useState<ProductItemResponse[]>([]);
   const [dashboardStats, setDashboardStats] = useState<ProductDashboardStatsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
+
+  const {
+    searchTerm = "",
+    categories = [],
+    statuses = [],
+    sortBy = "id",
+    sortDirection = "asc",
+  } = options;
 
   const fetchDashboardStats = useCallback(async () => {
     const response = await fetch(API_BASE_URL + "/api/products/dashboard-stats");
@@ -95,9 +118,20 @@ export function useProducts(page: number, pageSize = 10): UseProductsResult {
   }, []);
 
   const fetchProductsPage = useCallback(async () => {
-    const response = await fetch(
-      API_BASE_URL + `/api/products?pageNumber=${page}&pageSize=${pageSize}`,
-    );
+    const searchParams = new URLSearchParams();
+    searchParams.set("pageNumber", page.toString());
+    searchParams.set("pageSize", pageSize.toString());
+    searchParams.set("sortBy", sortBy);
+    searchParams.set("sortDirection", sortDirection);
+
+    if (searchTerm.trim()) {
+      searchParams.set("searchTerm", searchTerm.trim());
+    }
+
+    categories.forEach((category) => searchParams.append("categories", category));
+    statuses.forEach((status) => searchParams.append("statuses", status));
+
+    const response = await fetch(API_BASE_URL + `/api/products?${searchParams.toString()}`);
 
     if (!response.ok) {
       const message = await extractApiErrorMessage(response, "Failed to load products from API.");
@@ -109,7 +143,7 @@ export function useProducts(page: number, pageSize = 10): UseProductsResult {
     setProducts(payload.items ?? []);
     setTotalRecords(payload.totalRecords ?? 0);
     setTotalPages(Math.max(payload.totalPages ?? 1, 1));
-  }, [page, pageSize]);
+  }, [page, pageSize, searchTerm, categories, statuses, sortBy, sortDirection]);
 
   const refreshProducts = useCallback(async () => {
     await Promise.all([fetchProductsPage(), fetchDashboardStats()]);

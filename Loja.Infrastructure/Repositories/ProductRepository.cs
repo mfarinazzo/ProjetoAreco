@@ -8,6 +8,8 @@ namespace Loja.Infrastructure.Repositories;
 
 public sealed class ProductRepository : IProductRepository
 {
+    private const int LowStockThreshold = 10;
+
     private readonly LojaDbContext _dbContext;
 
     public ProductRepository(LojaDbContext dbContext)
@@ -18,11 +20,74 @@ public sealed class ProductRepository : IProductRepository
     public async Task<PagedProductsResult> GetPagedAsync(
         int pageNumber,
         int pageSize,
+        string? searchTerm = null,
+        IReadOnlyCollection<string>? categories = null,
+        IReadOnlyCollection<string>? statuses = null,
+        string sortBy = "id",
+        string sortDirection = "asc",
         CancellationToken cancellationToken = default)
     {
-        var query = _dbContext.Products
-            .AsNoTracking()
-            .OrderBy(product => product.Name);
+        var query = _dbContext.Products.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var normalizedSearchTerm = searchTerm.Trim();
+            query = query.Where(product =>
+                EF.Functions.Like(EF.Property<string>(product, nameof(Product.Sku)), $"%{normalizedSearchTerm}%") ||
+                EF.Functions.Like(product.Name, $"%{normalizedSearchTerm}%") ||
+                EF.Functions.Like(product.Category, $"%{normalizedSearchTerm}%"));
+        }
+
+        if (categories is { Count: > 0 })
+        {
+            var normalizedCategories = categories
+                .Where(category => !string.IsNullOrWhiteSpace(category))
+                .Select(category => category.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            if (normalizedCategories.Length > 0)
+            {
+                query = query.Where(product => normalizedCategories.Contains(product.Category));
+            }
+        }
+
+        if (statuses is { Count: > 0 })
+        {
+            var normalizedStatuses = statuses
+                .Where(status => !string.IsNullOrWhiteSpace(status))
+                .Select(status => status.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            var containsLowStock = normalizedStatuses.Contains("lowStock", StringComparer.OrdinalIgnoreCase);
+            var containsInStock = normalizedStatuses.Contains("inStock", StringComparer.OrdinalIgnoreCase);
+
+            if (containsLowStock && !containsInStock)
+            {
+                query = query.Where(product => product.StockQuantity < LowStockThreshold);
+            }
+            else if (!containsLowStock && containsInStock)
+            {
+                query = query.Where(product => product.StockQuantity >= LowStockThreshold);
+            }
+        }
+
+        var sortByNormalized = string.IsNullOrWhiteSpace(sortBy) ? "id" : sortBy.Trim();
+        var sortDescending = string.Equals(sortDirection, "desc", StringComparison.OrdinalIgnoreCase);
+
+        query = sortByNormalized.ToLowerInvariant() switch
+        {
+            "price" => sortDescending
+                ? query.OrderByDescending(product => product.Price).ThenBy(product => product.Id)
+                : query.OrderBy(product => product.Price).ThenBy(product => product.Id),
+            "stockquantity" => sortDescending
+                ? query.OrderByDescending(product => product.StockQuantity).ThenBy(product => product.Id)
+                : query.OrderBy(product => product.StockQuantity).ThenBy(product => product.Id),
+            _ => sortDescending
+                ? query.OrderByDescending(product => product.Id)
+                : query.OrderBy(product => product.Id),
+        };
 
         var totalRecords = await query.CountAsync(cancellationToken);
 

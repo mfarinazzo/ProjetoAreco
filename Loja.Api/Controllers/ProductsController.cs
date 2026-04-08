@@ -21,9 +21,23 @@ public sealed class ProductsController : ControllerBase
     public async Task<ActionResult<PagedResult<ProductItemResponse>>> GetProductsAsync(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string[]? categories = null,
+        [FromQuery] string[]? statuses = null,
+        [FromQuery] string sortBy = "id",
+        [FromQuery] string sortDirection = "asc",
         CancellationToken cancellationToken = default)
     {
-        var result = await _productService.GetPagedAsync(pageNumber, pageSize, cancellationToken);
+        var result = await _productService.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            searchTerm,
+            categories,
+            statuses,
+            sortBy,
+            sortDirection,
+            cancellationToken);
+
         return Ok(result);
     }
 

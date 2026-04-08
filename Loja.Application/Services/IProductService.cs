@@ -8,6 +8,11 @@ public interface IProductService
     Task<PagedResult<ProductItemResponse>> GetPagedAsync(
         int pageNumber,
         int pageSize,
+        string? searchTerm = null,
+        IReadOnlyCollection<string>? categories = null,
+        IReadOnlyCollection<string>? statuses = null,
+        string sortBy = "id",
+        string sortDirection = "asc",
         CancellationToken cancellationToken = default);
 
     Task<ProductItemResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);

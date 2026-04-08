@@ -35,3 +35,9 @@ export interface ProductUpsertInput {
   price: number;
   stockQuantity: number;
 }
+
+export type ProductSortBy = "id" | "price" | "stockQuantity";
+
+export type ProductSortDirection = "asc" | "desc";
+
+export type ProductStatusFilter = "inStock" | "lowStock";

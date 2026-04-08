@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Database, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
-import type { ProductItemResponse } from "@/components/products/types";
+import { ArrowDown, ArrowUp, Database, MoreHorizontal, Pencil, Plus, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import type {
+  ProductItemResponse,
+  ProductSortBy,
+  ProductSortDirection,
+  ProductStatusFilter,
+} from "@/components/products/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -30,7 +35,16 @@ interface ProductTableProps {
   totalRecords: number;
   pageSize: number;
   isLoading: boolean;
+  sortBy: ProductSortBy;
+  sortDirection: ProductSortDirection;
+  categoryOptions: readonly string[];
+  selectedCategories: string[];
+  selectedStatuses: ProductStatusFilter[];
   onSearchTermChange: (value: string) => void;
+  onSortChange: (column: ProductSortBy) => void;
+  onToggleCategoryFilter: (category: string) => void;
+  onToggleStatusFilter: (status: ProductStatusFilter) => void;
+  onClearFilters: () => void;
   onPageChange: (nextPage: number) => void;
   onOpenAddModal: () => void;
   onSeedDemoData: () => Promise<void>;
@@ -79,7 +93,16 @@ export function ProductTable({
   totalRecords,
   pageSize,
   isLoading,
+  sortBy,
+  sortDirection,
+  categoryOptions,
+  selectedCategories,
+  selectedStatuses,
   onSearchTermChange,
+  onSortChange,
+  onToggleCategoryFilter,
+  onToggleStatusFilter,
+  onClearFilters,
   onPageChange,
   onOpenAddModal,
   onSeedDemoData,
@@ -90,6 +113,7 @@ export function ProductTable({
 }: ProductTableProps) {
   const [openRowMenuId, setOpenRowMenuId] = useState<string | null>(null);
   const [rowMenuDirection, setRowMenuDirection] = useState<"up" | "down">("down");
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const rowMenuContainerRef = useRef<HTMLDivElement>(null);
   const rowMenuHeight = 44;
 
@@ -129,6 +153,27 @@ export function ProductTable({
   const isFiltering = searchTerm.trim().length > 0;
   const firstItemIndex = totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const lastItemIndex = totalRecords === 0 ? 0 : Math.min(currentPage * pageSize, totalRecords);
+  const activeFilterCount = selectedCategories.length + selectedStatuses.length;
+
+  function getDisplayIdByRowIndex(rowIndex: number): number {
+    const absoluteIndex = (currentPage - 1) * pageSize + rowIndex;
+
+    if (sortBy === "id" && sortDirection === "desc") {
+      return Math.max(totalRecords - absoluteIndex, 0);
+    }
+
+    return absoluteIndex + 1;
+  }
+
+  function renderSortIcon(column: ProductSortBy) {
+    if (sortBy !== column) {
+      return <ArrowUp className="size-3.5 opacity-30" />;
+    }
+
+    return sortDirection === "asc"
+      ? <ArrowUp className="size-3.5" />
+      : <ArrowDown className="size-3.5" />;
+  }
 
   return (
     <section ref={rowMenuContainerRef}>
@@ -147,6 +192,21 @@ export function ProductTable({
                 className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none"
               />
             </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsFilterPanelOpen((isOpen) => !isOpen)}
+              className="h-9 rounded-lg border-slate-200 bg-white px-3 text-slate-700 hover:bg-slate-100"
+              aria-label="Open filters"
+            >
+              <SlidersHorizontal className="size-4" />
+              {activeFilterCount > 0 && (
+                <span className="rounded-md bg-slate-200 px-1.5 py-0.5 text-xs font-semibold text-slate-700">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
 
             <Button
               type="button"
@@ -172,10 +232,90 @@ export function ProductTable({
           </div>
         </CardHeader>
 
+        <div
+          className={cn(
+            "grid transition-all duration-300 ease-out",
+            isFilterPanelOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+          )}
+        >
+          <div className="overflow-hidden">
+            <div className="space-y-3 border-b border-slate-100 bg-slate-50/70 px-4 py-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Category</span>
+                {categoryOptions.map((category) => {
+                  const isActive = selectedCategories.includes(category);
+
+                  return (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => onToggleCategoryFilter(category)}
+                      className={cn(
+                        "rounded-full border px-2.5 py-1 text-xs font-medium transition",
+                        isActive
+                          ? "border-slate-900 bg-slate-900 text-white"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100",
+                      )}
+                    >
+                      {category}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Status</span>
+                {([
+                  { value: "inStock", label: "In Stock" },
+                  { value: "lowStock", label: "Low Stock" },
+                ] as const).map((statusItem) => {
+                  const isActive = selectedStatuses.includes(statusItem.value);
+
+                  return (
+                    <button
+                      key={statusItem.value}
+                      type="button"
+                      onClick={() => onToggleStatusFilter(statusItem.value)}
+                      className={cn(
+                        "rounded-full border px-2.5 py-1 text-xs font-medium transition",
+                        isActive
+                          ? "border-slate-900 bg-slate-900 text-white"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100",
+                      )}
+                    >
+                      {statusItem.label}
+                    </button>
+                  );
+                })}
+
+                {activeFilterCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={onClearFilters}
+                    className="ml-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50 hover:bg-slate-50">
+                <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <button
+                    type="button"
+                    onClick={() => onSortChange("id")}
+                    className="inline-flex items-center gap-1 hover:text-slate-700"
+                  >
+                    ID
+                    {renderSortIcon("id")}
+                  </button>
+                </TableHead>
                 <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   SKU
                 </TableHead>
@@ -186,10 +326,24 @@ export function ProductTable({
                   Category
                 </TableHead>
                 <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  Price
+                  <button
+                    type="button"
+                    onClick={() => onSortChange("price")}
+                    className="inline-flex items-center gap-1 hover:text-slate-700"
+                  >
+                    Price
+                    {renderSortIcon("price")}
+                  </button>
                 </TableHead>
                 <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  Stock Quantity
+                  <button
+                    type="button"
+                    onClick={() => onSortChange("stockQuantity")}
+                    className="inline-flex items-center gap-1 hover:text-slate-700"
+                  >
+                    Stock Quantity
+                    {renderSortIcon("stockQuantity")}
+                  </button>
                 </TableHead>
                 <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Status
@@ -203,13 +357,16 @@ export function ProductTable({
             <TableBody>
               {products.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
+                  <TableCell colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500">
                     {isLoading ? "Loading products..." : "No products found for this filter."}
                   </TableCell>
                 </TableRow>
               ) : (
-                products.map((product) => (
+                products.map((product, rowIndex) => (
                   <TableRow key={product.id} className="hover:bg-slate-50">
+                    <TableCell className="px-4 py-3 font-medium text-slate-600">
+                      {integerFormatter.format(getDisplayIdByRowIndex(rowIndex))}
+                    </TableCell>
                     <TableCell className="px-4 py-3 font-medium text-slate-700">{product.sku}</TableCell>
                     <TableCell className="px-4 py-3 font-medium text-slate-900">{product.name}</TableCell>
                     <TableCell className="px-4 py-3 text-slate-600">{product.category}</TableCell>
