@@ -15,6 +15,11 @@ interface ApiProblemDetailsResponse {
   errors?: Record<string, string[]>;
 }
 
+interface SeedProductsResponse {
+  requestedCount: number;
+  createdCount: number;
+}
+
 interface UseProductsResult {
   products: ProductItemResponse[];
   dashboardStats: ProductDashboardStatsResponse | null;
@@ -26,6 +31,7 @@ interface UseProductsResult {
   updateProduct: (id: string, input: ProductUpsertInput) => Promise<ProductItemResponse>;
   deleteProduct: (id: string) => Promise<void>;
   duplicateProduct: (product: ProductItemResponse) => Promise<ProductItemResponse>;
+  seedDemoProducts: (count?: number) => Promise<number>;
 }
 
 async function extractApiErrorMessage(response: Response, fallbackMessage: string): Promise<string> {
@@ -242,6 +248,33 @@ export function useProducts(page: number, pageSize = 10): UseProductsResult {
     return createProduct(duplicateInput);
   }, [createProduct]);
 
+  const seedDemoProducts = useCallback(async (count = 232) => {
+    try {
+      setIsMutating(true);
+
+      const response = await fetch(API_BASE_URL + `/api/products/seed-demo?count=${count}`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const message = await extractApiErrorMessage(response, "Failed to seed demo products.");
+        throw new Error(message);
+      }
+
+      const payload = (await response.json()) as SeedProductsResponse;
+      await refreshProducts();
+      toast.success(`${payload.createdCount} demo products added successfully.`);
+
+      return payload.createdCount;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to seed demo products.";
+      toast.error(message);
+      throw error;
+    } finally {
+      setIsMutating(false);
+    }
+  }, [refreshProducts]);
+
   return {
     products,
     dashboardStats,
@@ -253,5 +286,6 @@ export function useProducts(page: number, pageSize = 10): UseProductsResult {
     updateProduct,
     deleteProduct,
     duplicateProduct,
+    seedDemoProducts,
   };
 }

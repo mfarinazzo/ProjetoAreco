@@ -417,6 +417,7 @@ export function ProductCatalogSection({ showCharts = false }: ProductCatalogSect
     updateProduct,
     deleteProduct,
     duplicateProduct,
+    seedDemoProducts,
   } = useProducts(productCurrentPage, 10);
 
   const [isCreateProductModalOpen, setIsCreateProductModalOpen] = useState(false);
@@ -508,6 +509,15 @@ export function ProductCatalogSection({ showCharts = false }: ProductCatalogSect
     }
   }
 
+  async function handleSeedDemoData() {
+    try {
+      await seedDemoProducts(232);
+      setProductCurrentPage(1);
+    } catch {
+      // Error toast is handled by useProducts.
+    }
+  }
+
   return (
     <>
       {isProductsLoading && (
@@ -542,9 +552,11 @@ export function ProductCatalogSection({ showCharts = false }: ProductCatalogSect
         }}
         onPageChange={setProductCurrentPage}
         onOpenAddModal={() => setIsCreateProductModalOpen(true)}
+        onSeedDemoData={handleSeedDemoData}
         onOpenEditModal={setEditingProduct}
         onOpenDeleteModal={setDeletingProduct}
         onDuplicateProduct={handleDuplicateProduct}
+        isSeedingDemoData={isProductMutationLoading}
       />
 
       <ProductForm

@@ -93,6 +93,12 @@ public sealed class ProductRepository : IProductRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task AddRangeAsync(IEnumerable<Product> products, CancellationToken cancellationToken = default)
+    {
+        await _dbContext.Products.AddRangeAsync(products, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task UpdateAsync(Product product, CancellationToken cancellationToken = default)
     {
         _dbContext.Products.Update(product);

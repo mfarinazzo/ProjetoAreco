@@ -2,6 +2,7 @@ using FluentValidation;
 using Loja.Application.Contracts.Common;
 using Loja.Application.Contracts.Products;
 using Loja.Domain.Common;
+using Loja.Domain.Constants;
 using Loja.Domain.Entities;
 using Loja.Domain.Repositories;
 using Loja.Domain.ValueObjects;
@@ -14,6 +15,7 @@ public sealed class ProductService : IProductService
     private const int DefaultPageNumber = 1;
     private const int DefaultPageSize = 10;
     private const int MaxPageSize = 100;
+    private const int MaxSeedProducts = 1000;
 
     private readonly IProductRepository _productRepository;
     private readonly IValidator<CreateProductRequest> _createValidator;
@@ -76,6 +78,56 @@ public sealed class ProductService : IProductService
             snapshot.TotalProducts,
             snapshot.TotalInventoryValue,
             categoryItems);
+    }
+
+    public async Task<int> SeedDemoProductsAsync(int count, CancellationToken cancellationToken = default)
+    {
+        if (count <= 0)
+        {
+            throw new DomainException("A quantidade para carga ficticia deve ser maior que zero.");
+        }
+
+        if (count > MaxSeedProducts)
+        {
+            throw new DomainException($"A carga ficticia permite no maximo {MaxSeedProducts} produtos por execucao.");
+        }
+
+        var categories = new[]
+        {
+            ProductCategories.Electronics,
+            ProductCategories.Apparel,
+            ProductCategories.OfficeSupplies,
+            ProductCategories.Home,
+        };
+
+        var batchCode = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        var products = new List<Product>(capacity: count);
+
+        for (var index = 1; index <= count; index++)
+        {
+            var category = categories[(index - 1) % categories.Length];
+            var price = category == ProductCategories.Electronics
+                ? 50m + (index % 450) + 0.99m
+                : 10m + (index % 300) + 0.49m;
+
+            var product = Product.Create(
+                sku: $"DEMO-{batchCode}-{index:0000}",
+                name: $"Demo Product {index:000}",
+                category: category,
+                price: price,
+                stockQuantity: 5 + (index % 200));
+
+            products.Add(product);
+        }
+
+        await _productRepository.AddRangeAsync(products, cancellationToken);
+
+        _logger.LogInformation(
+            "Seeded {ProductsCount} demo products. BatchCode: {BatchCode}",
+            count,
+            batchCode);
+
+        return count;
     }
 
     public async Task<ProductItemResponse> CreateAsync(

@@ -68,6 +68,21 @@ public sealed class ProductsController : ControllerBase
             createdProduct);
     }
 
+    [HttpPost("seed-demo")]
+    [ProducesResponseType(typeof(SeedProductsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemResponse), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<SeedProductsResponse>> SeedDemoProductsAsync(
+        [FromQuery] int count = 232,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedCount = count <= 0 ? 232 : count;
+        var createdCount = await _productService.SeedDemoProductsAsync(normalizedCount, cancellationToken);
+
+        return Ok(new SeedProductsResponse(
+            RequestedCount: normalizedCount,
+            CreatedCount: createdCount));
+    }
+
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(ProductItemResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

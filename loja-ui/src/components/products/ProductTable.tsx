@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Database, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import type { ProductItemResponse } from "@/components/products/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,9 +33,11 @@ interface ProductTableProps {
   onSearchTermChange: (value: string) => void;
   onPageChange: (nextPage: number) => void;
   onOpenAddModal: () => void;
+  onSeedDemoData: () => Promise<void>;
   onOpenEditModal: (product: ProductItemResponse) => void;
   onOpenDeleteModal: (product: ProductItemResponse) => void;
   onDuplicateProduct: (product: ProductItemResponse) => Promise<void>;
+  isSeedingDemoData?: boolean;
 }
 
 function getVisiblePageNumbers(totalPages: number, currentPage: number): number[] {
@@ -80,9 +82,11 @@ export function ProductTable({
   onSearchTermChange,
   onPageChange,
   onOpenAddModal,
+  onSeedDemoData,
   onOpenEditModal,
   onOpenDeleteModal,
   onDuplicateProduct,
+  isSeedingDemoData = false,
 }: ProductTableProps) {
   const [openRowMenuId, setOpenRowMenuId] = useState<string | null>(null);
   const rowMenuContainerRef = useRef<HTMLDivElement>(null);
@@ -135,6 +139,19 @@ export function ProductTable({
             >
               <Plus className="size-4" />
               Add Product
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                void onSeedDemoData();
+              }}
+              disabled={isSeedingDemoData}
+              className="h-9 rounded-lg border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-100"
+            >
+              <Database className="size-4" />
+              {isSeedingDemoData ? "Adding data..." : "Add 232 Demo"}
             </Button>
           </div>
         </CardHeader>

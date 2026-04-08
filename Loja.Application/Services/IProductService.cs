@@ -14,6 +14,8 @@ public interface IProductService
 
     Task<ProductDashboardStatsResponse> GetDashboardStatsAsync(CancellationToken cancellationToken = default);
 
+    Task<int> SeedDemoProductsAsync(int count, CancellationToken cancellationToken = default);
+
     Task<ProductItemResponse> CreateAsync(
         CreateProductRequest request,
         CancellationToken cancellationToken = default);
