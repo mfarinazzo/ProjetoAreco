@@ -30,6 +30,11 @@ Thumbs.db
 .env
 .env.*
 
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+
 # .NET user files
 *.user
 *.suo
