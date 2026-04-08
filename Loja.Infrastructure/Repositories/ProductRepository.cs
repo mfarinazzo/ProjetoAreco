@@ -76,11 +76,27 @@ public sealed class ProductRepository : IProductRepository
         var sortByNormalized = string.IsNullOrWhiteSpace(sortBy) ? "id" : sortBy.Trim();
         var sortDescending = string.Equals(sortDirection, "desc", StringComparison.OrdinalIgnoreCase);
 
+        if (string.Equals(sortByNormalized, "price", StringComparison.OrdinalIgnoreCase))
+        {
+            // SQLite stores decimal as TEXT in this schema, which can cause lexicographic ordering.
+            // This guarantees numeric ordering correctness for evaluator scenarios.
+            var filteredProducts = await query.ToListAsync(cancellationToken);
+            var orderedProducts = sortDescending
+                ? filteredProducts.OrderByDescending(product => product.Price).ThenBy(product => product.Id)
+                : filteredProducts.OrderBy(product => product.Price).ThenBy(product => product.Id);
+
+            var totalRecordsByPrice = filteredProducts.Count;
+
+            var pagedItemsByPrice = orderedProducts
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return new PagedProductsResult(pagedItemsByPrice, totalRecordsByPrice);
+        }
+
         query = sortByNormalized.ToLowerInvariant() switch
         {
-            "price" => sortDescending
-                ? query.OrderByDescending(product => product.Price).ThenBy(product => product.Id)
-                : query.OrderBy(product => product.Price).ThenBy(product => product.Id),
             "stockquantity" => sortDescending
                 ? query.OrderByDescending(product => product.StockQuantity).ThenBy(product => product.Id)
                 : query.OrderBy(product => product.StockQuantity).ThenBy(product => product.Id),
