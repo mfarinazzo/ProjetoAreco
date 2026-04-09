@@ -1,3 +1,4 @@
+using Loja.Domain.Common;
 using Loja.Domain.Entities;
 using Loja.Domain.Repositories;
 using Loja.Domain.ValueObjects;
@@ -32,10 +33,21 @@ public sealed class ProductRepository : IProductRepository
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var normalizedSearchTerm = searchTerm.Trim();
-            query = query.Where(product =>
-                EF.Functions.Like(EF.Property<string>(product, nameof(Product.Sku)), $"%{normalizedSearchTerm}%") ||
-                EF.Functions.Like(product.Name, $"%{normalizedSearchTerm}%") ||
-                EF.Functions.Like(product.Category, $"%{normalizedSearchTerm}%"));
+            var searchPattern = $"%{normalizedSearchTerm}%";
+
+            if (TryParseSku(normalizedSearchTerm, out var parsedSku))
+            {
+                query = query.Where(product =>
+                    EF.Functions.Like(product.Name, searchPattern) ||
+                    EF.Functions.Like(product.Category, searchPattern) ||
+                    product.Sku == parsedSku);
+            }
+            else
+            {
+                query = query.Where(product =>
+                    EF.Functions.Like(product.Name, searchPattern) ||
+                    EF.Functions.Like(product.Category, searchPattern));
+            }
         }
 
         if (categories is { Count: > 0 })
@@ -159,9 +171,7 @@ public sealed class ProductRepository : IProductRepository
     {
         return _dbContext.Products
             .AsNoTracking()
-            .AnyAsync(
-                product => EF.Property<string>(product, nameof(Product.Sku)).StartsWith("DEMO-"),
-                cancellationToken);
+            .AnyAsync(product => product.Name == "Demo Product 001", cancellationToken);
     }
 
     public Task<bool> ExistsBySkuAsync(
@@ -202,5 +212,19 @@ public sealed class ProductRepository : IProductRepository
     {
         _dbContext.Products.Remove(product);
         await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static bool TryParseSku(string input, out Sku sku)
+    {
+        try
+        {
+            sku = Sku.Parse(input);
+            return true;
+        }
+        catch (DomainException)
+        {
+            sku = default;
+            return false;
+        }
     }
 }
