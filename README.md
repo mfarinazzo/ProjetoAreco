@@ -320,6 +320,7 @@ GET /api/products?pageNumber=1&pageSize=10&searchTerm=demo&categories=Electronic
 
 A imagem abaixo representa o design inicial que foi usado como referencia para a construcao desta aplicacao.
 Esse design-base foi desenvolvido com apoio de inteligencia artificial e serviu como direcao visual para a implementacao final.
+**O foco do projeto é na funcionalidade da página Dashboard, as outras páginas são meramente ilustrativas e servem como um bonus.** 
 
 ![Design inicial de referencia](template.png)
 
@@ -407,26 +408,7 @@ npm run build
 
 ---
 
-## 14. Troubleshooting
-
-### 1) Porta em uso
-
-- Erro comum: "address already in use".
-- Solucao: fechar processo antigo da API/UI e rodar novamente.
-
-### 2) Build falha por arquivo bloqueado no backend
-
-- Se dotnet run estiver aberto na API, o build da solucao pode acusar lock de DLL.
-- Solucao: parar o processo rodando ou buildar em output temporario.
-
-### 3) Seed demo bloqueada
-
-- Comportamento esperado: so permite uma carga demo por banco.
-- Para reiniciar do zero localmente, remova o arquivo SQLite de desenvolvimento e rode a API novamente.
-
----
-
-## 15. Estrutura do Repositorio
+## 14. Estrutura do Repositorio
 
 ```text
 Loja.Api/            # API HTTP, middleware e composicao
@@ -439,7 +421,7 @@ loja-ui/             # Frontend React + TypeScript + Vite
 
 ---
 
-## 16. Fechamento
+## 15. Fechamento
 
 Este projeto foi desenhado para equilibrar:
 
